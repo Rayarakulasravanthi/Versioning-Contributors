@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        #game-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .snake-segment {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #3498db;
+            border-radius: 50%;
+        }
+
+        #food {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+        }
+
+        #score-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            color: white;
+        }
+    </style>
+    <title>Snake Game</title>
+</head>
+<body>
+    <div id="game-container">
+        <div id="food"></div>
+        <div id="score-container">Score: <span id="score">0</span></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.getElementById('game-container');
+            const food = document.getElementById('food');
+            const scoreElement = document.getElementById('score');
+
+            let snakeBody = [{ x: 0, y: 0 }];
+            let foodX;
+            let foodY;
+            let directionX = 1;
+            let directionY = 0;
+            let score = 0;
+            let snakeColor = '#3498db';
+
+            function update() {
+                const head = { x: snakeBody[0].x + directionX, y: snakeBody[0].y + directionY };
+
+                // Check if the snake has collided with the walls
+                if (head.x < 0 || head.x >= gameContainer.clientWidth / 20 || head.y < 0 || head.y >= gameContainer.clientHeight / 20) {
+                    alert('Game Over! Your score: ' + score);
+                    resetGame();
+                    return;
+                }
+
+                // Check if the snake has collided with itself
+                for (let i = 1; i < snakeBody.length; i++) {
+                    if (head.x === snakeBody[i].x && head.y === snakeBody[i].y) {
+                        alert('Game Over! Your score: ' + score);
+                        resetGame();
+                        return;
+                    }
+                }
+
+                // Check if the snake has eaten the food
+                if (head.x === foodX && head.y === foodY) {
+                    // Increase the length of the snake
+                    snakeBody.unshift({ x: foodX, y: foodY });
+
+                    // Move the food to a new position
+                    moveFood();
+
+                    // Increase the score
+                    score++;
+                    scoreElement.textContent = score;
+
+                    // Change the color of the snake
+                    snakeColor = getRandomColor();
+                } else {
+                    // Move the snake
+                    snakeBody.unshift(head);
+                    snakeBody.pop();
+                }
+
+                // Update the snake's position
+                updateSnakeUI();
+            }
+
+            function updateSnakeUI() {
+                // Remove existing snake segments
+                const existingSegments = document.querySelectorAll('.snake-segment');
+                existingSegments.forEach(segment => gameContainer.removeChild(segment));
+
+                // Add new snake segments
+                snakeBody.forEach((segment, index) => {
+                    const snakeSegment = document.createElement('div');
+                    snakeSegment.className = 'snake-segment';
+                    snakeSegment.style.left = segment.x * 20 + 'px';
+                    snakeSegment.style.top = segment.y * 20 + 'px';
+                    snakeSegment.style.backgroundColor = snakeColor;
+                    gameContainer.appendChild(snakeSegment);
+                });
+            }
+
+            function moveFood() {
+                foodX = Math.floor(Math.random() * (gameContainer.clientWidth / 20));
+                foodY = Math.floor(Math.random() * (gameContainer.clientHeight / 20));
+
+                // Avoid placing food on the snake
+                while (snakeBody.some(segment => segment.x === foodX && segment.y === foodY)) {
+                    foodX = Math.floor(Math.random() * (gameContainer.clientWidth / 20));
+                    foodY = Math.floor(Math.random() * (gameContainer.clientHeight / 20));
+                }
+
+                food.style.left = foodX * 20 + 'px';
+                food.style.top = foodY * 20 + 'px';
+            }
+
+            function resetGame() {
+                snakeBody = [{ x: 0, y: 0 }];
+                directionX = 1;
+                directionY = 0;
+                removeSnakeSegments();
+                moveFood();
+                score = 0;
+                scoreElement.textContent = '0';
+                snakeColor = '#3498db';
+            }
+
+            function removeSnakeSegments() {
+                const existingSegments = document.querySelectorAll('.snake-segment');
+                existingSegments.forEach(segment => gameContainer.removeChild(segment));
+            }
+
+            function getRandomColor() {
+                const letters = '0123456789ABCDEF';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                return color;
+            }
+
+            document.addEventListener('keydown', (e) => {
+                switch (e.key) {
+                    case 'ArrowUp':
+                        if (directionY !== 1) {
+                            directionX = 0;
+                            directionY = -1;
+                        }
+                        break;
+                    case 'ArrowDown':
+                        if (directionY !== -1) {
+                            directionX = 0;
+                            directionY = 1;
+                        }
+                        break;
+                    case 'ArrowLeft':
+                        if (directionX !== 1) {
+                            directionX = -1;
+                            directionY = 0;
+                        }
+                        break;
+                    case 'ArrowRight':
+                        if (directionX !== -1) {
+                            directionX = 1;
+                            directionY = 0;
+                        }
+                        break;
+                }
+            });
+
+            moveFood();
+            setInterval(update, 100);
+        });
+    </script>
+</body>
+</html>
